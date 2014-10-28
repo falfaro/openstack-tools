@@ -77,6 +77,8 @@ def parse_log_line(line):
 def main():
   ts_vhosts = {}
   bad_ts_vhosts = collections.defaultdict(list)
+  processed = collections.defaultdict(lambda: 0)
+  bad = collections.defaultdict(lambda: 0)
 
   for line in sys.stdin.readlines():
     ts, binary, vhost = parse_log_line(line)
@@ -87,11 +89,15 @@ def main():
     if vhost in ts_vhosts:
       if not is_report_interval(ts_vhosts[vhost], ts):
         bad_ts_vhosts[vhost].append((ts_vhosts[vhost], ts))
+        bad[vhost] += 1
     ts_vhosts[vhost] = ts
+    processed[vhost] += 1
 
-  for vhost, bad_tss in bad_ts_vhosts.iteritems():
-    for ts1, ts2 in bad_tss:
-      print '! %-20s (%s, %s) (%s)' % (vhost, ts1, ts2, ts2-ts1)
+  for vhost in sorted(processed):
+    for ts1, ts2 in bad_ts_vhosts[vhost]:
+      print '+ %-20s (%s, %s) (%s)' % (vhost, ts1, ts2, ts2-ts1)
+    print '= %-20s process events: %d bad events: %d' % (
+      vhost, processed[vhost], bad[vhost])
 
 
 if __name__ == "__main__":
